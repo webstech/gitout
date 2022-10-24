@@ -19,7 +19,8 @@ jobs:
       fail-fast: false
       matrix:
         node-version: [14.x]
-        os: [ubuntu-latest, windows-latest]
+        # os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
 
     # job level env vars used for a couple of steps
@@ -30,21 +31,36 @@ jobs:
       GGG_WF: "'gitgitgadget.wf=1'"
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
-    - uses: actions/setup-node@v1.4.2
-      with:
-        node-version: '${{ matrix.node-version }}' # optional, default is 10.x
+    # - uses: actions/setup-node@v1.4.2
+      # with:
+        # node-version: '${{ matrix.node-version }}' # optional, default is 10.x
 
-    - name: Install packages
-      run: npm ci
+    # - name: Install packages
+      # run: npm ci
 
     - name: Set git test repo config
       shell: bash
-      run: echo "::set-env name=GGG_REPO::'gitgitgadget.githubtest.githubuser=$GITHUB_REPOSITORY_OWNER' 'gitgitgadget.$GITHUB_REPOSITORY_OWNER.githubrepo=$GGG_REPOSITORY' 'gitgitgadget.$GITHUB_REPOSITORY_OWNER.githubtoken=$GGG_TOKEN'"
+      run: echo "GGG_REPO='gitgitgadget.githubtest.githubuser=$GITHUB_REPOSITORY_OWNER' 'gitgitgadget.$GITHUB_REPOSITORY_OWNER.githubrepo=$GGG_REPOSITORY' 'gitgitgadget.$GITHUB_REPOSITORY_OWNER.githubtoken=$GGG_TOKEN'" >> $GITHUB_ENV
       if: env.GGG_TOKEN
 
     - name: Run tests
       env:
         GIT_CONFIG_PARAMETERS: ${{ env.GGG_WF }} ${{ secrets.GGG_SMTP_USER }} ${{ secrets.GGG_SMTP_PASS }} ${{ secrets.GGG_SMTP_HOST }} ${{ secrets.GGG_SMTP_OPTS }} ${{ env.GGG_REPO }}
       run: echo $GIT_CONFIG_PARAMETERS
+
+    - name: Run tests
+      env:
+        GIT_CONFIG_PARAMETERS: ${{ env.GGG_WF }} ${{ secrets.GGG_SMTP_USER }} ${{ secrets.GGG_SMTP_PASS }} ${{ secrets.GGG_SMTP_HOST }} ${{ secrets.GGG_SMTP_OPTS }} ${{ env.GGG_REPO }}
+      run: |
+        echo $GIT_CONFIG_PARAMETERS
+    - name: Create annotation for build error
+      run: |
+        e="%0Afoo%0Abar%0A%0Aand so much more!"
+        echo "::error file=app.js,line=1::Missing semicolon error${e}"
+        echo "::warning file=app1.js,line=1::Missing colon warning"
+        echo "### Hello world! :rocket:" >> $GITHUB_STEP_SUMMARY
+        echo "# ${e}" >> $GITHUB_STEP_SUMMARY
+        echo "::notice file=app1.js,line=1::Missing colon notice"
+        exit 1
